@@ -7,7 +7,7 @@ resource "null_resource" "lambda_dependencies" {
   }
 
   provisioner "local-exec" {
-    command = "pip install -r ${path.module}/lambda/requirements.txt -t ${path.module}/lambda/"
+    command = "pip3 install -r ${path.module}/lambda/requirements.txt -t ${path.module}/lambda/"
   }
 }
 

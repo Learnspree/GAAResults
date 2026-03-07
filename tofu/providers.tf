@@ -3,6 +3,7 @@ terraform {
     bucket = "tofustate-learnspree"
     key    = "gaaresults/tofustate"
     region = "us-east-1"
+    profile = "default"
   }
 
   required_providers {
