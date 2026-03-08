@@ -24,6 +24,11 @@ override.tf.json
 *_override.tf.json
 *.plan
 
+# lambda
+tofu/lambda/**
+lambda.zip
+.terraform.lock.hcl
+
 # Ignore transient lock info files created by terraform apply
 .terraform.tfstate.lock.info
 

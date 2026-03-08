@@ -15,8 +15,10 @@ def lambda_handler(event, context):
             response = requests.get(url, timeout=10)
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'html.parser')
-                span = soup.find('span', class_='titleBox active')
+                # span = soup.find('span', class_='titleBox active')
+                span = soup.select_one('span.titleBox.active')
                 if span:
+                    print(f"Found league name for ID {league_id}: {span.text.strip()}")
                     league_name = span.text.strip()
                     table.put_item(Item={
                         'league_code': str(league_id),
