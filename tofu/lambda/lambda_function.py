@@ -7,7 +7,7 @@ def lambda_handler(event, context):
     to_id = int(event.get('to'))
 
     dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table('league-codes')
+    table = dynamodb.Table('gaa-results-leagues-production')
 
     for league_id in range(from_id, to_id + 1):
         url = f"https://dublingaa.sportlomo.com/league-2/{league_id}/"
