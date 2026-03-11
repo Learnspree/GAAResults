@@ -36,11 +36,19 @@ def lambda_handler(event, context):
 
                 if league_name:
                     print(f"Found league name for ID {league_id}: {league_name}")
-                    table.put_item(Item={
+
+                    # extract first occurrence of processcell('MonDDYY') and take last two chars as year
+                    m_year = re.search(r"processcell\(\s*['\"][A-Za-z]+[0-9]{1,2}([0-9]{2})['\"]\s*\)", text, re.IGNORECASE)
+                    year = m_year.group(1) if m_year else '26'
+
+                    item = {
                         'league_code': str(league_id),
                         'league_name': league_name,
-                        'url': url
-                    })
+                        'url': url,
+                        'year': year
+                    }
+
+                    table.put_item(Item=item)
                 else:
                     print(f"No league name found for ID {league_id}")
             else:
