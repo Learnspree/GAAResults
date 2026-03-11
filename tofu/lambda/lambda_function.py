@@ -32,7 +32,7 @@ def lambda_handler(event, context):
                             league_name = inner.group(1).strip()
 
                 # log a single-line, truncated HTML snippet for debugging
-                # print((text.replace("\n", " "))[:4000])
+                # print((text.replace("\n", " ")))
 
                 if league_name:
                     print(f"Found league name for ID {league_id}: {league_name}")
