@@ -46,6 +46,10 @@ def lambda_handler(event, context):
                     m_age = re.search(r"\bU(\d{1,2})\b", league_name, re.IGNORECASE)
                     if m_age:
                         age_group = 'U' + m_age.group(1)
+                    elif re.search(r"adult", league_name, re.IGNORECASE):
+                        age_group = 'Adult'
+                    elif re.search(r"minor", league_name, re.IGNORECASE):
+                        age_group = 'Minor'
                     else:
                         age_group = "Unknown"
 
@@ -55,6 +59,10 @@ def lambda_handler(event, context):
                         sport_code = 'LGFA'
                     elif re.search(r"camogie", league_name, re.IGNORECASE):
                         sport_code = 'Camogie'
+                    elif re.search(r"football", league_name, re.IGNORECASE):
+                        sport_code = 'Football'
+                    elif re.search(r"hurling", league_name, re.IGNORECASE):
+                        sport_code = 'Hurling'
                     else:
                         sport_code = 'Other'
 
