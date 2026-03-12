@@ -41,11 +41,39 @@ def lambda_handler(event, context):
                     m_year = re.search(r"processcell\(\s*['\"][A-Za-z]+[0-9]{1,2}([0-9]{2})['\"]\s*\)", text, re.IGNORECASE)
                     year = m_year.group(1) if m_year else '26'
 
+                    # parse age-group like 'U14' from league_name
+                    age_group = None
+                    m_age = re.search(r"\bU(\d{1,2})\b", league_name, re.IGNORECASE)
+                    if m_age:
+                        age_group = 'U' + m_age.group(1)
+                    else:
+                        age_group = "Unknown"
+
+                    # parse sport code (LGFA or Camogie)
+                    sport_code = None
+                    if re.search(r"\bLGFA\b", league_name, re.IGNORECASE):
+                        sport_code = 'LGFA'
+                    elif re.search(r"camogie", league_name, re.IGNORECASE):
+                        sport_code = 'Camogie'
+                    else:
+                        sport_code = 'Other'
+
+                    # parse division like 'Div 10' or 'Division 9'
+                    division = None
+                    m_div = re.search(r"\b(?:Div|Division)\s+(\d{1,2})\b", league_name, re.IGNORECASE)
+                    if m_div:
+                        division = m_div.group(1)
+                    else:
+                        division = "0"
+
                     item = {
                         'league_code': str(league_id),
                         'league_name': league_name,
                         'url': url,
-                        'year': year
+                        'year': year,
+                        'age_group': age_group,
+                        'sport_code': sport_code,
+                        'division': division
                     }
 
                     table.put_item(Item=item)
