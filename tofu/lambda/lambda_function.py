@@ -92,30 +92,30 @@ def lambda_handler(event, context):
 
                     table.put_item(Item=item)
 
-                    # Write to the league_clubs_table with league_code, club_code and club_name
+                    # Write to the league_clubs_table with league_code, team_code and team_name
                     # Only do this if the league sport_code is NOT 'Other' (to avoid parsing irrelevant pages)
                     if sport_code and sport_code != 'Other':
                         try:
-                            # find all club links and collect unique club_code -> club_name
-                            club_re = re.compile(r'<a\s+href=["\']https?://dublingaa\.sportlomo\.com/clubprofile/([^?"\']+)(?:\?[^"\']*)?["\'][^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
-                            clubs = {}
-                            for m in club_re.finditer(text):
-                                club_code = m.group(1).strip().rstrip('/')
-                                club_name = re.sub(r"\s+", " ", m.group(2)).strip()
-                                if club_code and club_code not in clubs:
-                                    clubs[club_code] = club_name
+                            # find all team links that include a team_id parameter and collect unique team_id -> team_name
+                            team_re = re.compile(r'<a\s+href=["\']https?://dublingaa\.sportlomo\.com/clubprofile/[^"\']*?team_id=(\d+)[^"\']*["\'][^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
+                            teams = {}
+                            for m in team_re.finditer(text):
+                                team_code = m.group(1).strip().rstrip('/')
+                                team_name = re.sub(r"\s+", " ", m.group(2)).strip()
+                                if team_code and team_code not in teams:
+                                    teams[team_code] = team_name
 
-                            for club_code, club_name in clubs.items():
+                            for team_code, team_name in teams.items():
                                 try:
                                     clubs_table.put_item(Item={
                                         'league_code': str(league_id),
-                                        'club_code': club_code,
-                                        'club_name': club_name
+                                        'team_code': team_code,
+                                        'team_name': team_name
                                     })
                                 except Exception as e:
-                                    print(f"Failed writing club {club_code} for league {league_id}: {e}")
+                                    print(f"Failed writing team {team_code} for league {league_id}: {e}")
                         except Exception as e:
-                            print(f"Error parsing/writing clubs for league {league_id}: {e}")
+                            print(f"Error parsing/writing teams for league {league_id}: {e}")
                 else:
                     print(f"No league name found for ID {league_id}")
             else:

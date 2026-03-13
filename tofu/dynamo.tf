@@ -19,7 +19,7 @@ resource "aws_dynamodb_table" "league_clubs_table" {
   billing_mode = "PAY_PER_REQUEST" # on‑demand capacity
 
   hash_key = "league_code"
-  range_key = "club_code"
+  range_key = "team_code"
 
   attribute {
     name = "league_code"
@@ -27,7 +27,7 @@ resource "aws_dynamodb_table" "league_clubs_table" {
   }
 
   attribute {
-    name = "club_code"
+    name = "team_code"
     type = "S"      # string type; up to 10 characters/digits
   }
 
