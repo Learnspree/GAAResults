@@ -100,7 +100,7 @@ def lambda_handler(event, context):
                             club_re = re.compile(r'<a\s+href=["\']https?://dublingaa\.sportlomo\.com/clubprofile/([^?"\']+)(?:\?[^"\']*)?["\'][^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
                             clubs = {}
                             for m in club_re.finditer(text):
-                                club_code = m.group(1).strip()
+                                club_code = m.group(1).strip().rstrip('/')
                                 club_name = re.sub(r"\s+", " ", m.group(2)).strip()
                                 if club_code and club_code not in clubs:
                                     clubs[club_code] = club_name
