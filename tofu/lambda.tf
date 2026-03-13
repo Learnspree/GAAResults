@@ -33,6 +33,7 @@ resource "aws_lambda_function" "scraper" {
   environment {
     variables = {
       DYNAMODB_TABLE = aws_dynamodb_table.league_table.name
+      DYNAMODB_CLUBS_TABLE = aws_dynamodb_table.league_clubs_table.name
     }
   }
 }

@@ -29,7 +29,10 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "dynamodb:PutItem",
           "dynamodb:UpdateItem"
         ]
-        Resource = aws_dynamodb_table.league_table.arn
+        Resource = [
+          aws_dynamodb_table.league_table.arn,
+          aws_dynamodb_table.league_clubs_table.arn
+        ]
       },
       {
         Effect = "Allow"

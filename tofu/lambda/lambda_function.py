@@ -1,3 +1,4 @@
+import os
 import boto3
 import requests
 import re
@@ -7,7 +8,12 @@ def lambda_handler(event, context):
     to_id = int(event.get('to'))
 
     dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table('gaa-results-leagues-production')
+    leagues_table_name = os.environ.get('DYNAMODB_TABLE', 'gaa-results-leagues-production')
+    table = dynamodb.Table(leagues_table_name)
+
+    # clubs table can be provided via env or derived from leagues table name
+    clubs_table_name = os.environ.get('DYNAMODB_CLUBS_TABLE', leagues_table_name.replace('leagues', 'league-clubs'))
+    clubs_table = dynamodb.Table(clubs_table_name)
 
     for league_id in range(from_id, to_id + 1):
         url = f"https://dublingaa.sportlomo.com/league-2/{league_id}/"
@@ -85,6 +91,31 @@ def lambda_handler(event, context):
                     }
 
                     table.put_item(Item=item)
+
+                    # Write to the league_clubs_table with league_code, club_code and club_name
+                    # Only do this if the league sport_code is NOT 'Other' (to avoid parsing irrelevant pages)
+                    if sport_code and sport_code != 'Other':
+                        try:
+                            # find all club links and collect unique club_code -> club_name
+                            club_re = re.compile(r'<a\s+href=["\']https?://dublingaa\.sportlomo\.com/clubprofile/([^?"\']+)(?:\?[^"\']*)?["\'][^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
+                            clubs = {}
+                            for m in club_re.finditer(text):
+                                club_code = m.group(1).strip()
+                                club_name = re.sub(r"\s+", " ", m.group(2)).strip()
+                                if club_code and club_code not in clubs:
+                                    clubs[club_code] = club_name
+
+                            for club_code, club_name in clubs.items():
+                                try:
+                                    clubs_table.put_item(Item={
+                                        'league_code': str(league_id),
+                                        'club_code': club_code,
+                                        'club_name': club_name
+                                    })
+                                except Exception as e:
+                                    print(f"Failed writing club {club_code} for league {league_id}: {e}")
+                        except Exception as e:
+                            print(f"Error parsing/writing clubs for league {league_id}: {e}")
                 else:
                     print(f"No league name found for ID {league_id}")
             else:
