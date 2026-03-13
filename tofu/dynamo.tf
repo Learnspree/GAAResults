@@ -31,11 +31,6 @@ resource "aws_dynamodb_table" "league_clubs_table" {
     type = "S"      # string type; up to 10 characters/digits
   }
 
-  attribute {
-    name = "club_name"
-    type = "S"      # string type; up to 50 characters/digits
-  }
-
   tags = {
     Environment = local.environment
   }
