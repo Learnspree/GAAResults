@@ -47,17 +47,22 @@ def lambda_handler(event, context):
                     m_year = re.search(r"processcell\(\s*['\"][A-Za-z]+[0-9]{1,2}([0-9]{2})['\"]\s*\)", text, re.IGNORECASE)
                     year = m_year.group(1) if m_year else '26'
 
-                    # parse age-group like 'U14' from league_name
+                    # parse age-group like 'U14' from league_name; fallback to 'Under X'
                     age_group = None
                     m_age = re.search(r"\bU(\d{1,2})\b", league_name, re.IGNORECASE)
+
                     if m_age:
                         age_group = 'U' + m_age.group(1)
-                    elif re.search(r"adult", league_name, re.IGNORECASE):
-                        age_group = 'Adult'
-                    elif re.search(r"minor", league_name, re.IGNORECASE):
-                        age_group = 'Minor'
                     else:
-                        age_group = "Unknown"
+                        m_under = re.search(r"\bUnder\s+(\d{1,2})\b", league_name, re.IGNORECASE)
+                        if m_under:
+                            age_group = 'U' + m_under.group(1)
+                        elif re.search(r"adult", league_name, re.IGNORECASE):
+                            age_group = 'Adult'
+                        elif re.search(r"minor", league_name, re.IGNORECASE):
+                            age_group = 'Minor'
+                        else:
+                            age_group = "Unknown"
 
                     # parse sport code (LGFA or Camogie)
                     sport_code = None
@@ -94,7 +99,8 @@ def lambda_handler(event, context):
 
                     # Write to the league_clubs_table with league_code, team_code and team_name
                     # Only do this if the league sport_code is NOT 'Other' (to avoid parsing irrelevant pages)
-                    if sport_code and sport_code != 'Other':
+                    # Had to comment out the "not other" part because some valid leagues don't identify the sport at all
+                    if sport_code: # and sport_code != 'Other':
                         try:
                             # find all team links that include a team_id parameter and collect unique team_id -> team_name
                             team_re = re.compile(r'<a\s+href=["\']https?://dublingaa\.sportlomo\.com/clubprofile/[^"\']*?team_id=(\d+)[^"\']*["\'][^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
