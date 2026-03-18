@@ -35,3 +35,25 @@ resource "aws_dynamodb_table" "league_clubs_table" {
     Environment = local.environment
   }
 }
+
+resource "aws_dynamodb_table" "league_results_table" {
+  name         = "gaa-results-league-results-${local.environment}"
+  billing_mode = "PAY_PER_REQUEST" # on‑demand capacity
+
+  hash_key = "match_code"
+  range_key = "league_code"
+
+  attribute {
+    name = "match_code"
+    type = "S"      # string type; up to 10 characters/digits
+  }
+
+  attribute {
+    name = "league_code"
+    type = "S"      # string type; up to 10 characters/digits
+  }
+
+  tags = {
+    Environment = local.environment
+  }
+}

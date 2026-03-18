@@ -9,11 +9,11 @@ def lambda_handler(event, context):
 
     dynamodb = boto3.resource('dynamodb')
     leagues_table_name = os.environ.get('DYNAMODB_TABLE', 'gaa-results-leagues-production')
-    table = dynamodb.Table(leagues_table_name)
-
-    # clubs table can be provided via env or derived from leagues table name
     clubs_table_name = os.environ.get('DYNAMODB_CLUBS_TABLE', leagues_table_name.replace('leagues', 'league-clubs'))
+    results_table_name = os.environ.get('DYNAMODB_RESULTS_TABLE', leagues_table_name.replace('leagues', 'league-results'))
+    table = dynamodb.Table(leagues_table_name)
     clubs_table = dynamodb.Table(clubs_table_name)
+    results_table = dynamodb.Table(results_table_name)
 
     for league_id in range(from_id, to_id + 1):
         url = f"https://dublingaa.sportlomo.com/league-2/{league_id}/"
@@ -21,24 +21,11 @@ def lambda_handler(event, context):
             response = requests.get(url, timeout=10)
             if response.status_code == 200:
                 text = response.text
-
-                # Try to find the span directly in the HTML (server-rendered)
-                m = re.search(r'<span[^>]*class=["\']titleBox(?:\s+active)?["\'][^>]*>(.*?)</span>', text, re.DOTALL | re.IGNORECASE)
-
-                league_name = None
-                if m:
-                    league_name = m.group(1).strip()
-                else:
-                    # Fallback: match jQuery injection like:
-                    # jQuery(".entry-title").html('<span class="titleBox active">LGFA U15 League Div 1</span>');
-                    m2 = re.search(r"jQuery\(\s*['\"]\.entry-title['\"]\s*\)\.html\(\s*['\"](?P<html><span[^'\"]*?>.*?</span>)['\"]\s*\);", text, re.DOTALL | re.IGNORECASE)
-                    if m2:
-                        inner = re.search(r'>(.*?)</span>', m2.group('html'), re.DOTALL | re.IGNORECASE)
-                        if inner:
-                            league_name = inner.group(1).strip()
-
                 # log a single-line, truncated HTML snippet for debugging
                 # print((text.replace("\n", " ")))
+                
+                # Get League Name
+                league_name = extract_league_name(text)
 
                 if league_name:
                     print(f"Found league name for ID {league_id}: {league_name}")
@@ -48,42 +35,13 @@ def lambda_handler(event, context):
                     year = m_year.group(1) if m_year else '26'
 
                     # parse age-group like 'U14' from league_name; fallback to 'Under X'
-                    age_group = None
-                    m_age = re.search(r"\bU(\d{1,2})\b", league_name, re.IGNORECASE)
-
-                    if m_age:
-                        age_group = 'U' + m_age.group(1)
-                    else:
-                        m_under = re.search(r"\bUnder\s+(\d{1,2})\b", league_name, re.IGNORECASE)
-                        if m_under:
-                            age_group = 'U' + m_under.group(1)
-                        elif re.search(r"adult", league_name, re.IGNORECASE):
-                            age_group = 'Adult'
-                        elif re.search(r"minor", league_name, re.IGNORECASE):
-                            age_group = 'Minor'
-                        else:
-                            age_group = "Unknown"
+                    age_group = extract_age_group(league_name)
 
                     # parse sport code (LGFA or Camogie)
-                    sport_code = None
-                    if re.search(r"\bLGFA\b", league_name, re.IGNORECASE):
-                        sport_code = 'LGFA'
-                    elif re.search(r"camogie", league_name, re.IGNORECASE):
-                        sport_code = 'Camogie'
-                    elif re.search(r"football", league_name, re.IGNORECASE):
-                        sport_code = 'Football'
-                    elif re.search(r"hurling", league_name, re.IGNORECASE):
-                        sport_code = 'Hurling'
-                    else:
-                        sport_code = 'Other'
+                    sport_code = extract_sport_code(league_name)
 
                     # parse division like 'Div 10' or 'Division 9'
-                    division = None
-                    m_div = re.search(r"\b(?:Div|Division)\s+(\d{1,2})\b", league_name, re.IGNORECASE)
-                    if m_div:
-                        division = m_div.group(1)
-                    else:
-                        division = "0"
+                    division = extract_division(league_name)
 
                     item = {
                         'league_code': str(league_id),
@@ -101,27 +59,8 @@ def lambda_handler(event, context):
                     # Only do this if the league sport_code is NOT 'Other' (to avoid parsing irrelevant pages)
                     # Had to comment out the "not other" part because some valid leagues don't identify the sport at all
                     if sport_code: # and sport_code != 'Other':
-                        try:
-                            # find all team links that include a team_id parameter and collect unique team_id -> team_name
-                            team_re = re.compile(r'<a\s+href=["\']https?://dublingaa\.sportlomo\.com/clubprofile/[^"\']*?team_id=(\d+)[^"\']*["\'][^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
-                            teams = {}
-                            for m in team_re.finditer(text):
-                                team_code = m.group(1).strip().rstrip('/')
-                                team_name = re.sub(r"\s+", " ", m.group(2)).strip()
-                                if team_code and team_code not in teams:
-                                    teams[team_code] = team_name
-
-                            for team_code, team_name in teams.items():
-                                try:
-                                    clubs_table.put_item(Item={
-                                        'league_code': str(league_id),
-                                        'team_code': team_code,
-                                        'team_name': team_name
-                                    })
-                                except Exception as e:
-                                    print(f"Failed writing team {team_code} for league {league_id}: {e}")
-                        except Exception as e:
-                            print(f"Error parsing/writing teams for league {league_id}: {e}")
+                        extract_league_clubs(clubs_table, league_id, text)
+                        extract_league_results(results_table, league_id, text)
                 else:
                     print(f"No league name found for ID {league_id}")
             else:
@@ -130,3 +69,111 @@ def lambda_handler(event, context):
             print(f"Error processing ID {league_id}: {str(e)}")
     
     return {'status': 'completed'}
+
+def extract_league_name(text):
+    league_name = None
+    
+    # Try to find the span directly in the HTML (server-rendered)
+    m = re.search(r'<span[^>]*class=["\']titleBox(?:\s+active)?["\'][^>]*>(.*?)</span>', text, re.DOTALL | re.IGNORECASE)
+
+    if m:
+        league_name = m.group(1).strip()
+    else:
+        # Fallback: match jQuery injection like:
+        # jQuery(".entry-title").html('<span class="titleBox active">LGFA U15 League Div 1</span>');
+        m2 = re.search(r"jQuery\(\s*['\"]\.entry-title['\"]\s*\)\.html\(\s*['\"](?P<html><span[^'\"]*?>.*?</span>)['\"]\s*\);", text, re.DOTALL | re.IGNORECASE)
+        if m2:
+            inner = re.search(r'>(.*?)</span>', m2.group('html'), re.DOTALL | re.IGNORECASE)
+            if inner:
+                league_name = inner.group(1).strip()
+    return league_name
+
+def extract_division(league_name):
+    division = None
+    m_div = re.search(r"\b(?:Div|Division)\s+(\d{1,2})\b", league_name, re.IGNORECASE)
+    if m_div:
+        division = m_div.group(1)
+    else:
+        division = "0"
+    return division
+
+def extract_age_group(league_name):
+    age_group = None
+    m_age = re.search(r"\bU(\d{1,2})\b", league_name, re.IGNORECASE)
+
+    if m_age:
+        age_group = 'U' + m_age.group(1)
+    else:
+        m_under = re.search(r"\bUnder\s+(\d{1,2})\b", league_name, re.IGNORECASE)
+        if m_under:
+            age_group = 'U' + m_under.group(1)
+        elif re.search(r"adult", league_name, re.IGNORECASE):
+            age_group = 'Adult'
+        elif re.search(r"minor", league_name, re.IGNORECASE):
+            age_group = 'Minor'
+        else:
+            age_group = "Unknown"
+    return age_group
+
+def extract_sport_code(league_name):
+    sport_code = None
+    if re.search(r"\bLGFA\b", league_name, re.IGNORECASE):
+        sport_code = 'LGFA'
+    elif re.search(r"camogie", league_name, re.IGNORECASE):
+        sport_code = 'Camogie'
+    elif re.search(r"football", league_name, re.IGNORECASE):
+        sport_code = 'Football'
+    elif re.search(r"hurling", league_name, re.IGNORECASE):
+        sport_code = 'Hurling'
+    else:
+        sport_code = 'Other'
+    return sport_code
+
+def extract_league_clubs(clubs_table, league_id, text):
+    try:
+        # find all team links that include a team_id parameter and collect unique team_id -> team_name
+        team_re = re.compile(r'<a\s+href=["\']https?://dublingaa\.sportlomo\.com/clubprofile/[^"\']*?team_id=(\d+)[^"\']*["\'][^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
+        teams = {}
+        for m in team_re.finditer(text):
+            team_code = m.group(1).strip().rstrip('/')
+            team_name = re.sub(r"\s+", " ", m.group(2)).strip()
+            if team_code and team_code not in teams:
+                teams[team_code] = team_name
+
+        for team_code, team_name in teams.items():
+            try:
+                clubs_table.put_item(Item={
+                                        'league_code': str(league_id),
+                                        'team_code': team_code,
+                                        'team_name': team_name
+                                    })
+            except Exception as e:
+                print(f"Failed writing team {team_code} for league {league_id}: {e}")
+    except Exception as e:
+        print(f"Error parsing/writing teams for league {league_id}: {e}")
+
+# TODO - update this function to extract match results using a different regex
+# EXAMPLE: <td style='max-width:30px;min-width:30px'><span class='tooltip' title='&lt;div style=&#039;display:inline-block;color:#000;font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;&#039;&gt;Innisfails&amp;nbsp;&amp;nbsp;&lt;b&gt;5 - 10&lt;/b&gt; VS &lt;b&gt;3 - 4&lt;/b&gt; Tyrrelstown&lt;/div&gt;&lt;center style=&#039;color:#000;font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;&#039;&gt;08 Jun 2025&lt;/center&gt;&lt;/span&gt;' style='background:#0CD68A; text-align:center; color:#fff;'>W</span></td>
+# TEMPLATE: <td style='max-width:30px;min-width:30px'><span class='tooltip' title='&lt;div style=&#039;display:inline-block;color:#000;font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;&#039;&gt;[HOME TEAM]&amp;nbsp;&amp;nbsp;&lt;b&gt;[HOME TEAM GOALS] - [HOME TEAM POINTS]0&lt;/b&gt; VS &lt;b&gt;[AWAY TEAM GOALS] - [AWAY TEAM POINTS]&lt;/b&gt; [AWAY TEAM]&lt;/div&gt;&lt;center style=&#039;color:#000;font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;&#039;&gt;[MATCH DATE]&lt;/center&gt;&lt;/span&gt;' style='background:#0CD68A; text-align:center; color:#fff;'>W</span></td>
+def extract_league_results(results_table, league_id, text):
+    try:
+        # find all results 
+        match_re = re.compile(r'<a\s+href=["\']https?://dublingaa\.sportlomo\.com/clubprofile/[^"\']*?team_id=(\d+)[^"\']*["\'][^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
+        results = {}
+        for m in match_re.finditer(text):
+            team_code = m.group(1).strip().rstrip('/')
+            team_name = re.sub(r"\s+", " ", m.group(2)).strip()
+            if team_code and team_code not in results:
+                results[team_code] = team_name
+
+        for team_code, team_name in results.items():
+            try:
+                results_table.put_item(Item={
+                                        'league_code': str(league_id),
+                                        'team_code': team_code,
+                                        'team_name': team_name
+                                    })
+            except Exception as e:
+                print(f"Failed writing result {team_code} for league {league_id}: {e}")
+    except Exception as e:
+        print(f"Error parsing/writing results for league {league_id}: {e}")
