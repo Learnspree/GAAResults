@@ -201,7 +201,12 @@ def extract_league_results(results_table, league_id, text):
             }
             if match_date:
                 item['match_date'] = match_date
+            # build a simple match_code: "<league_code>:<home_team> vs <away_team>"
+            def _safe(s):
+                return re.sub(r"\s+", " ", s).strip().replace('|', '-')
 
+            match_code = f"{league_id}:{_safe(home_team)} vs {_safe(away_team)}"
+            item['match_code'] = match_code
             try:
                 results_table.put_item(Item=item)
             except Exception as e:
