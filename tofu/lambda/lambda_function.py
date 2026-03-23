@@ -155,25 +155,56 @@ def extract_league_clubs(clubs_table, league_id, text):
 # TODO - update this function to extract match results using a different regex
 # EXAMPLE: <td style='max-width:30px;min-width:30px'><span class='tooltip' title='&lt;div style=&#039;display:inline-block;color:#000;font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;&#039;&gt;Innisfails&amp;nbsp;&amp;nbsp;&lt;b&gt;5 - 10&lt;/b&gt; VS &lt;b&gt;3 - 4&lt;/b&gt; Tyrrelstown&lt;/div&gt;&lt;center style=&#039;color:#000;font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;&#039;&gt;08 Jun 2025&lt;/center&gt;&lt;/span&gt;' style='background:#0CD68A; text-align:center; color:#fff;'>W</span></td>
 # TEMPLATE: <td style='max-width:30px;min-width:30px'><span class='tooltip' title='&lt;div style=&#039;display:inline-block;color:#000;font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;&#039;&gt;[HOME TEAM]&amp;nbsp;&amp;nbsp;&lt;b&gt;[HOME TEAM GOALS] - [HOME TEAM POINTS]0&lt;/b&gt; VS &lt;b&gt;[AWAY TEAM GOALS] - [AWAY TEAM POINTS]&lt;/b&gt; [AWAY TEAM]&lt;/div&gt;&lt;center style=&#039;color:#000;font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;&#039;&gt;[MATCH DATE]&lt;/center&gt;&lt;/span&gt;' style='background:#0CD68A; text-align:center; color:#fff;'>W</span></td>
+# Save record in results table with league_code, home_team, away_team, home_goals, home_points, away_goals, away_points and match_date
 def extract_league_results(results_table, league_id, text):
+    import html
+    from datetime import datetime
     try:
-        # find all results 
-        match_re = re.compile(r'<a\s+href=["\']https?://dublingaa\.sportlomo\.com/clubprofile/[^"\']*?team_id=(\d+)[^"\']*["\'][^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
-        results = {}
-        for m in match_re.finditer(text):
-            team_code = m.group(1).strip().rstrip('/')
-            team_name = re.sub(r"\s+", " ", m.group(2)).strip()
-            if team_code and team_code not in results:
-                results[team_code] = team_name
+        # find all tooltip spans' title attribute (which contains encoded HTML with match info)
+        tooltip_re = re.compile(r"<span[^>]*class=[\'\"]tooltip[\'\"][^>]*title=[\'\"](.*?)[\'\"][^>]*>", re.IGNORECASE | re.DOTALL)
+        for title_html in tooltip_re.findall(text):
+            decoded = html.unescape(title_html)
 
-        for team_code, team_name in results.items():
+            # extract match date from <center>DATE</center> if present
+            date_m = re.search(r"<center[^>]*>(.*?)</center>", decoded, re.IGNORECASE | re.DOTALL)
+            match_date = None
+            if date_m:
+                date_str = re.sub(r"\s+", " ", date_m.group(1)).strip()
+                try:
+                    dt = datetime.strptime(date_str, "%d %b %Y")
+                    match_date = dt.strftime("%Y-%m-%d")
+                except Exception:
+                    match_date = date_str
+
+            # extract home/away teams and scores from the decoded HTML
+            # expected structure: [HOME TEAM] <b>Hgoals - Hpoints</b> VS <b>Agoals - Apoints</b> [AWAY TEAM]
+            score_re = re.compile(r"^(.*?)\s*<b>\s*(\d+)\s*-\s*(\d+)\s*</b>\s*VS\s*<b>\s*(\d+)\s*-\s*(\d+)\s*</b>\s*(.*?)$", re.IGNORECASE | re.DOTALL)
+            m = score_re.search(decoded)
+            if not m:
+                continue
+
+            home_team = re.sub(r"\s+", " ", re.sub(r"<.*?>", "", m.group(1))).strip()
+            home_goals = m.group(2)
+            home_points = m.group(3)
+            away_goals = m.group(4)
+            away_points = m.group(5)
+            away_team = re.sub(r"\s+", " ", re.sub(r"<.*?>", "", m.group(6))).strip()
+
+            item = {
+                'league_code': str(league_id),
+                'home_team': home_team,
+                'away_team': away_team,
+                'home_goals': home_goals,
+                'home_points': home_points,
+                'away_goals': away_goals,
+                'away_points': away_points,
+            }
+            if match_date:
+                item['match_date'] = match_date
+
             try:
-                results_table.put_item(Item={
-                                        'league_code': str(league_id),
-                                        'team_code': team_code,
-                                        'team_name': team_name
-                                    })
+                results_table.put_item(Item=item)
             except Exception as e:
-                print(f"Failed writing result {team_code} for league {league_id}: {e}")
+                print(f"Failed writing result for league {league_id}: {e}")
     except Exception as e:
         print(f"Error parsing/writing results for league {league_id}: {e}")
