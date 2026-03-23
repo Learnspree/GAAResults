@@ -31,7 +31,8 @@ resource "aws_iam_role_policy" "lambda_policy" {
         ]
         Resource = [
           aws_dynamodb_table.league_table.arn,
-          aws_dynamodb_table.league_clubs_table.arn
+          aws_dynamodb_table.league_clubs_table.arn,
+          aws_dynamodb_table.league_results_table.arn
         ]
       },
       {
