@@ -183,14 +183,21 @@ def extract_league_results(results_table, league_id, text):
             if not m:
                 continue
 
-            home_team = re.sub(r"\s+", " ", re.sub(r"<.*?>", "", m.group(1))).strip()
+            # TODO - parse out all whitespace and HTML
+            def _safe(s):
+                return re.sub(r"\s+", " ", s).strip().replace('|', '-')
+
+            home_team = _safe(re.sub(r"<.*?>", "", m.group(1)))
             home_goals = m.group(2)
             home_points = m.group(3)
             away_goals = m.group(4)
             away_points = m.group(5)
-            away_team = re.sub(r"\s+", " ", re.sub(r"<.*?>", "", m.group(6))).strip()
+            away_team = _safe(re.sub(r"<.*?>", "", m.group(6)))
+            match_code = f"{league_id}-{_safe(home_team)}-{_safe(away_team)}"
+
 
             item = {
+                'match_code': match_code,
                 'league_code': str(league_id),
                 'home_team': home_team,
                 'away_team': away_team,
@@ -198,15 +205,9 @@ def extract_league_results(results_table, league_id, text):
                 'home_points': home_points,
                 'away_goals': away_goals,
                 'away_points': away_points,
+                'match_date': match_date
             }
-            if match_date:
-                item['match_date'] = match_date
-            # build a simple match_code: "<league_code>:<home_team> vs <away_team>"
-            def _safe(s):
-                return re.sub(r"\s+", " ", s).strip().replace('|', '-')
 
-            match_code = f"{league_id}:{_safe(home_team)} vs {_safe(away_team)}"
-            item['match_code'] = match_code
             try:
                 results_table.put_item(Item=item)
             except Exception as e:
