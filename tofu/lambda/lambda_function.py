@@ -135,7 +135,8 @@ def safe(s):
     t = html.unescape(s or "")
     t = re.sub(r"<.*?>", "", t)
     t = t.replace('\u00A0', ' ')
-    t = re.sub(r"\s+", "", t)
+    # Only trim leading/trailing whitespace; preserve internal spacing
+    t = t.strip()
     t = t.replace('|', '-')
     return t
 
@@ -187,9 +188,13 @@ def extract_league_results(results_table, league_id, text):
                     match_date = date_str
 
             # extract home/away teams and scores from the decoded HTML
-            # expected structure: [HOME TEAM] <b>Hgoals - Hpoints</b> VS <b>Agoals - Apoints</b> [AWAY TEAM]
+            # remove any <center>...</center> (match date) so it doesn't get appended to the away team
+            decoded_for_scores = re.sub(r"<center[^>]*>.*?</center>", "", decoded, flags=re.IGNORECASE | re.DOTALL)
+
+            # expected structure (after removing center):
+            # [HOME TEAM] <b>Hgoals - Hpoints</b> VS <b>Agoals - Apoints</b> [AWAY TEAM]
             score_re = re.compile(r"^(.*?)\s*<b>\s*(\d+)\s*-\s*(\d+)\s*</b>\s*VS\s*<b>\s*(\d+)\s*-\s*(\d+)\s*</b>\s*(.*?)$", re.IGNORECASE | re.DOTALL)
-            m = score_re.search(decoded)
+            m = score_re.search(decoded_for_scores)
             if not m:
                 print(f"Error parsing match info from tooltip: {decoded}")
                 continue
