@@ -163,9 +163,6 @@ def extract_league_clubs(clubs_table, league_id, text):
     except Exception as e:
         print(f"Error parsing/writing teams for league {league_id}: {e}")
 
-# TODO - update this function to extract match results using a different regex
-# EXAMPLE: <td style='max-width:30px;min-width:30px'><span class='tooltip' title='&lt;div style=&#039;display:inline-block;color:#000;font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;&#039;&gt;Innisfails&amp;nbsp;&amp;nbsp;&lt;b&gt;5 - 10&lt;/b&gt; VS &lt;b&gt;3 - 4&lt;/b&gt; Tyrrelstown&lt;/div&gt;&lt;center style=&#039;color:#000;font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;&#039;&gt;08 Jun 2025&lt;/center&gt;&lt;/span&gt;' style='background:#0CD68A; text-align:center; color:#fff;'>W</span></td>
-# TEMPLATE: <td style='max-width:30px;min-width:30px'><span class='tooltip' title='&lt;div style=&#039;display:inline-block;color:#000;font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;&#039;&gt;[HOME TEAM]&amp;nbsp;&amp;nbsp;&lt;b&gt;[HOME TEAM GOALS] - [HOME TEAM POINTS]0&lt;/b&gt; VS &lt;b&gt;[AWAY TEAM GOALS] - [AWAY TEAM POINTS]&lt;/b&gt; [AWAY TEAM]&lt;/div&gt;&lt;center style=&#039;color:#000;font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;&#039;&gt;[MATCH DATE]&lt;/center&gt;&lt;/span&gt;' style='background:#0CD68A; text-align:center; color:#fff;'>W</span></td>
 # Save record in results table with league_code, home_team, away_team, home_goals, home_points, away_goals, away_points and match_date
 def extract_league_results(results_table, league_id, text):
     import html
