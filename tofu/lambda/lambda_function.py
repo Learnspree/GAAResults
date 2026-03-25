@@ -2,6 +2,7 @@ import os
 import boto3
 import requests
 import re
+import html
 
 def lambda_handler(event, context):
     from_id = int(event.get('from'))
@@ -129,6 +130,15 @@ def extract_sport_code(league_name):
         sport_code = 'Other'
     return sport_code
 
+def safe(s):
+    """Sanitize a string: unescape HTML entities, strip tags and remove all whitespace."""
+    t = html.unescape(s or "")
+    t = re.sub(r"<.*?>", "", t)
+    t = t.replace('\u00A0', ' ')
+    t = re.sub(r"\s+", "", t)
+    t = t.replace('|', '-')
+    return t
+
 def extract_league_clubs(clubs_table, league_id, text):
     try:
         # find all team links that include a team_id parameter and collect unique team_id -> team_name
@@ -181,19 +191,16 @@ def extract_league_results(results_table, league_id, text):
             score_re = re.compile(r"^(.*?)\s*<b>\s*(\d+)\s*-\s*(\d+)\s*</b>\s*VS\s*<b>\s*(\d+)\s*-\s*(\d+)\s*</b>\s*(.*?)$", re.IGNORECASE | re.DOTALL)
             m = score_re.search(decoded)
             if not m:
+                print(f"Error parsing match info from tooltip: {decoded}")
                 continue
 
-            # TODO - parse out all whitespace and HTML
-            def _safe(s):
-                return re.sub(r"\s+", " ", s).strip().replace('|', '-')
-
-            home_team = _safe(re.sub(r"<.*?>", "", m.group(1)))
+            home_team = safe(re.sub(r"<.*?>", "", m.group(1)))
             home_goals = m.group(2)
             home_points = m.group(3)
             away_goals = m.group(4)
             away_points = m.group(5)
-            away_team = _safe(re.sub(r"<.*?>", "", m.group(6)))
-            match_code = f"{league_id}-{_safe(home_team)}-{_safe(away_team)}"
+            away_team = safe(re.sub(r"<.*?>", "", m.group(6)))
+            match_code = f"{league_id}-{home_team}-{away_team}-{match_date}"
 
 
             item = {
