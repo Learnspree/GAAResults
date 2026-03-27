@@ -15,6 +15,8 @@ def lambda_handler(event, context):
     table = dynamodb.Table(leagues_table_name)
     clubs_table = dynamodb.Table(clubs_table_name)
     results_table = dynamodb.Table(results_table_name)
+    matches_table_name = os.environ.get('DYNAMODB_MATCHES_TABLE', leagues_table_name.replace('leagues', 'league-matches'))
+    matches_table = dynamodb.Table(matches_table_name)
 
     for league_id in range(from_id, to_id + 1):
         url = f"https://dublingaa.sportlomo.com/league-2/{league_id}/"
@@ -62,6 +64,7 @@ def lambda_handler(event, context):
                     if sport_code: # and sport_code != 'Other':
                         extract_league_clubs(clubs_table, league_id, text)
                         extract_league_results(results_table, league_id, text)
+                        extract_league_matches(matches_table, league_id, text)
                 else:
                     print(f"No league name found for ID {league_id}")
             else:
@@ -163,6 +166,76 @@ def extract_league_clubs(clubs_table, league_id, text):
     except Exception as e:
         print(f"Error parsing/writing teams for league {league_id}: {e}")
 
+def extract_league_matches(matches_table, league_id, text):
+    try:
+        from datetime import datetime
+        # Find desktop rows which contain full match details
+        rows_re = re.compile(r'<tr[^>]*class=["\']desktop["\'][^>]*>(.*?)</tr>', re.IGNORECASE | re.DOTALL)
+        for row_html in rows_re.findall(text):
+            # extract team names (first team-name is home, second is away)
+            team_name_re = re.compile(r'<span[^>]*class=["\']team-name["\'][^>]*>.*?<a[^>]*>(.*?)</a>.*?</span>', re.IGNORECASE | re.DOTALL)
+            teams = team_name_re.findall(row_html)
+            if len(teams) < 2:
+                continue
+
+            # normalize whitespace inside names, then sanitize
+            raw_home = re.sub(r"\s+", " ", teams[0]).strip()
+            raw_away = re.sub(r"\s+", " ", teams[1]).strip()
+            home_team = safe(raw_home)
+            away_team = safe(raw_away)
+
+            # extract score cells (first score = home, second = away)
+            score_td_re = re.compile(r'<td[^>]*class=["\']score["\'][^>]*>(.*?)</td>', re.IGNORECASE | re.DOTALL)
+            scores = score_td_re.findall(row_html)
+            if len(scores) < 2:
+                continue
+
+            def parse_score(s):
+                s_text = re.sub(r'<.*?>', '', s or '')
+                m = re.search(r"(\d+)\s*-\s*(\d+)", s_text)
+                return (m.group(1), m.group(2)) if m else (None, None)
+
+            home_goals, home_points = parse_score(scores[0])
+            away_goals, away_points = parse_score(scores[1])
+
+            # extract match time if present
+            time_m = re.search(r'<td[^>]*class=["\']time["\'][^>]*>.*?<span[^>]*>(.*?)</span>', row_html, re.IGNORECASE | re.DOTALL)
+            match_time = re.sub(r"\s+", " ", time_m.group(1)).strip() if time_m else None
+
+            # attempt to find a date string in the row (e.g., '08 Jun 2025')
+            date_m = re.search(r"(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})", row_html)
+            match_date = None
+            if date_m:
+                try:
+                    dt = datetime.strptime(date_m.group(1).strip(), "%d %b %Y")
+                    match_date = dt.strftime("%Y-%m-%d")
+                except Exception:
+                    match_date = date_m.group(1).strip()
+
+            match_code = f"{home_team}-{away_team}-{match_date or 'nodate'}"
+            # normalize match_code: remove non-alphanumeric and lowercase for a strict key
+            match_code = re.sub(r"[^A-Za-z0-9]", "", match_code).lower()
+
+            item = {
+                'match_code': match_code,
+                'league_code': str(league_id),
+                'home_team': home_team,
+                'away_team': away_team,
+                'home_goals': home_goals,
+                'home_points': home_points,
+                'away_goals': away_goals,
+                'away_points': away_points,
+                'match_time': match_time,
+                'match_date': match_date
+            }
+
+            try:
+                matches_table.put_item(Item=item)
+            except Exception as e:
+                print(f"Failed writing match {match_code} for league {league_id}: {e}")
+    except Exception as e:
+        print(f"Error parsing/writing matches for league {league_id}: {e}")
+
 # Save record in results table with league_code, home_team, away_team, home_goals, home_points, away_goals, away_points and match_date
 def extract_league_results(results_table, league_id, text):
     import html
@@ -202,7 +275,10 @@ def extract_league_results(results_table, league_id, text):
             away_goals = m.group(4)
             away_points = m.group(5)
             away_team = safe(re.sub(r"<.*?>", "", m.group(6)))
+
             match_code = f"{league_id}-{home_team}-{away_team}-{match_date}"
+            # normalize match_code: remove non-alphanumeric and lowercase for a strict key
+            match_code = re.sub(r"[^A-Za-z0-9]", "", match_code).lower()
 
 
             item = {

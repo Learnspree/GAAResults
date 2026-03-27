@@ -35,6 +35,7 @@ resource "aws_lambda_function" "scraper" {
       DYNAMODB_TABLE = aws_dynamodb_table.league_table.name
       DYNAMODB_CLUBS_TABLE = aws_dynamodb_table.league_clubs_table.name
       DYNAMODB_RESULTS_TABLE = aws_dynamodb_table.league_results_table.name
+      DYNAMODB_MATCHES_TABLE = aws_dynamodb_table.league_matches_table.name
     }
   }
 }
