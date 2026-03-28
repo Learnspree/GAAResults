@@ -7,7 +7,7 @@ import html
 def lambda_handler(event, context):
     from_id = int(event.get('from'))
     to_id = int(event.get('to'))
-
+ 
     dynamodb = boto3.resource('dynamodb')
     leagues_table_name = os.environ.get('DYNAMODB_TABLE', 'gaa-results-leagues-production')
     clubs_table_name = os.environ.get('DYNAMODB_CLUBS_TABLE', leagues_table_name.replace('leagues', 'league-clubs'))

@@ -18,10 +18,12 @@ resource "aws_sfn_state_machine" "league_loop" {
                 InvokeLambda = {
                     Type = "Task"
                     Resource = "arn:aws:states:::lambda:invoke"
+                    ResultPath = null
                     Parameters = {
                         FunctionName = aws_lambda_function.scraper.arn
                         Payload = {
-                            "league_id.$" = "$.current"
+                            "from.$" = "$.current"
+                            "to.$" = "$.current"
                         }
                     }
                     Next = "IsLast"
@@ -77,19 +79,30 @@ resource "aws_iam_role" "stepfunctions_role" {
 }
 
 resource "aws_iam_role_policy" "stepfunctions_lambda_policy" {
-    name = "stepfunctions-lambda-policy"
-    role = aws_iam_role.stepfunctions_role.id
+  name = "stepfunctions-lambda-policy"
+  role = aws_iam_role.stepfunctions_role.id
 
-    policy = jsonencode({
-        Version = "2012-10-17"
-        Statement = [
-            {
-                Effect = "Allow"
-                Action = [
-                    "lambda:InvokeFunction"
-                ]
-                Resource = "${aws_lambda_function.scraper.arn}:*"
-            }
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "lambda:InvokeFunction"
         ]
-    })
+        Resource = [
+          aws_lambda_function.scraper.arn
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
 }
