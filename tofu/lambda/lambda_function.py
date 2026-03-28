@@ -12,10 +12,11 @@ def lambda_handler(event, context):
     leagues_table_name = os.environ.get('DYNAMODB_TABLE', 'gaa-results-leagues-production')
     clubs_table_name = os.environ.get('DYNAMODB_CLUBS_TABLE', leagues_table_name.replace('leagues', 'league-clubs'))
     results_table_name = os.environ.get('DYNAMODB_RESULTS_TABLE', leagues_table_name.replace('leagues', 'league-results'))
+    matches_table_name = os.environ.get('DYNAMODB_MATCHES_TABLE', leagues_table_name.replace('leagues', 'league-matches'))
+
     table = dynamodb.Table(leagues_table_name)
     clubs_table = dynamodb.Table(clubs_table_name)
     results_table = dynamodb.Table(results_table_name)
-    matches_table_name = os.environ.get('DYNAMODB_MATCHES_TABLE', leagues_table_name.replace('leagues', 'league-matches'))
     matches_table = dynamodb.Table(matches_table_name)
 
     for league_id in range(from_id, to_id + 1):
@@ -188,7 +189,7 @@ def extract_league_matches(matches_table, league_id, text):
             rows_re = re.compile(r'<tr[^>]*class=["\']desktop["\'][^>]*>(.*?)</tr>', re.IGNORECASE | re.DOTALL)
             for mrow in rows_re.finditer(tbody_html):
                 row_html = mrow.group(1)
-                print(f"Processing match row for league {league_id}: {row_html}")
+                # print(f"Processing match row for league {league_id}: {row_html}")
 
                 # extract team names (first team-name is home, second is away)
                 team_name_re = re.compile(r'<span[^>]*class=["\']team-name["\'][^>]*>.*?<a[^>]*>(.*?)</a>.*?</span>', re.IGNORECASE | re.DOTALL)
