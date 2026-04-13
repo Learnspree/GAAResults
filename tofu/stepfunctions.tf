@@ -13,6 +13,48 @@ resource "aws_sfn_state_machine" "league_loop" {
                         "to.$"   = "$.to"
                         "current.$" = "$.from"
                     }
+                    Next = "ComputeCandidate"
+                }
+                ComputeCandidate = {
+                    Type = "Pass"
+                    # compute candidate end = current + 9
+                    Parameters = {
+                        "from.$" = "$.from"
+                        "to.$"   = "$.to"
+                        "current.$" = "$.current"
+                        "candidate.$" = "States.MathAdd($.current, 9)"
+                    }
+                    Next = "CompareCandidate"
+                }
+                CompareCandidate = {
+                    Type = "Choice"
+                    Choices = [
+                        {
+                            Variable = "$.candidate"
+                            NumericGreaterThanEqualsPath = "$.to"
+                            Next = "SetBatchToTo"
+                        }
+                    ]
+                    Default = "SetBatchToCandidate"
+                }
+                SetBatchToTo = {
+                    Type = "Pass"
+                    Parameters = {
+                        "from.$" = "$.from"
+                        "to.$"   = "$.to"
+                        "current.$" = "$.current"
+                        "batch_end.$" = "$.to"
+                    }
+                    Next = "InvokeLambda"
+                }
+                SetBatchToCandidate = {
+                    Type = "Pass"
+                    Parameters = {
+                        "from.$" = "$.from"
+                        "to.$"   = "$.to"
+                        "current.$" = "$.current"
+                        "batch_end.$" = "$.candidate"
+                    }
                     Next = "InvokeLambda"
                 }
                 InvokeLambda = {
@@ -23,7 +65,7 @@ resource "aws_sfn_state_machine" "league_loop" {
                         FunctionName = aws_lambda_function.scraper.arn
                         Payload = {
                             "from.$" = "$.current"
-                            "to.$" = "$.current"
+                            "to.$"   = "$.batch_end"
                         }
                     }
                     Next = "IsLast"
@@ -32,7 +74,7 @@ resource "aws_sfn_state_machine" "league_loop" {
                     Type = "Choice"
                     Choices = [
                         {
-                            Variable = "$.current"
+                            Variable = "$.batch_end"
                             NumericGreaterThanEqualsPath = "$.to"
                             Next = "Success"
                         }
@@ -46,13 +88,13 @@ resource "aws_sfn_state_machine" "league_loop" {
                 }
                 Increment = {
                     Type = "Pass"
-                    # increment current using intrinsic function
+                    # set current to batch_end + 1
                     Parameters = {
                         "from.$" = "$.from"
                         "to.$"   = "$.to"
-                        "current.$" = "States.MathAdd($.current, 1)"
+                        "current.$" = "States.MathAdd($.batch_end, 1)"
                     }
-                    Next = "InvokeLambda"
+                    Next = "ComputeCandidate"
                 }
                 Success = {
                     Type = "Succeed"
