@@ -4,6 +4,110 @@ import requests
 import re
 import html
 
+VALID_GAA_CLUBS = [
+    "Ballinteer St Johns",
+    "Ballyboden St Endas",
+    "Ballyboughal",
+    "Ballyfermot De Salle",
+    "Ballyfermot Gaels",
+    "Ballymun Kickhams",
+    "Beann Eadair",
+    "Bray Emmets",
+    "Castleknock",
+    "Civil Service Football",
+    "Civil Service HC",
+    "Clann Mhuire",
+    "Clanna Gael Fontenoy",
+    "Clontarf",
+    "Commercials",
+    "Craobh Chiarain",
+    "Croi Ro Naofa",
+    "Crumlin",
+    "Cuala",
+    "Erin Go Bragh",
+    "Erins Isle",
+    "Faughs",
+    "Fingal Ravens",
+    "Fingallians",
+    "Foxrock Cabinteely",
+    "Garda Westmanstown Gaels",
+    "Garristown",
+    "Geraldine P. Morans",
+    "Good Counsel Liffey Gaels",
+    "Innisfails",
+    "Kevins",
+    "Kilmacud Crokes",
+    "Lucan Sarsfields",
+    "Lucan Sarsfields 3",
+    "Lucan Sarsfields 4",
+    "Man O War",
+    "Na Dubh Ghall",
+    "Na Fianna",
+    "Na Gaeil Aeracha",
+    "Na Gaeil Oga",
+    "Naomh Barrog",
+    "Naomh Catriona",
+    "Naomh Fionnbarra",
+    "Naomh Mearnog",
+    "Naomh Olaf",
+    "Naomh an Iarthair",
+    "North County Gaels",
+    "North Wicklow Gaels",
+    "O' Dwyers",
+    "O' Tooles",
+    "PCG",
+    "Parnells",
+    "Pobal Parnell",
+    "Portobello",
+    "Raheny",
+    "Rainbow Gaels",
+    "Raingeiri Dubhglas",
+    "Ranelagh Gaels",
+    "Robert Emmets",
+    "Round Towers (C)",
+    "Round Towers Lusk",
+    "SSE Gaels",
+    "Scoil Ui Chonaill",
+    "Setanta",
+    "Shankill",
+    "Shankill / Stars of Erin",
+    "Skerries Harps",
+    "Southern Gaels",
+    "St Agnes",
+    "St Annes",
+    "St Brendans",
+    "St Brigids",
+    "St Colmcilles",
+    "St Finians (N)",
+    "St Finians (S)",
+    "St James Gaels An Caislean",
+    "St Josephs OCB",
+    "St Judes",
+    "St Kevins Killians",
+    "St Margarets",
+    "St Marks",
+    "St Marys S",
+    "St Maurs",
+    "St Monicas",
+    "St Oliver Plunketts ER",
+    "St Patricks (D)",
+    "St Patricks (P)",
+    "St Patricks Wicklow",
+    "St Peregrines",
+    "St Peters",
+    "St Sylvesters",
+    "St Vincents",
+    "Starlights",
+    "Stars of Erin",
+    "Templeogue Synge St",
+    "Thomas Davis",
+    "Trinity Gaels",
+    "Tyrrelstown",
+    "Wanderers",
+    "Whitehall Colmcille",
+    "Wild Geese",
+]
+
 def lambda_handler(event, context):
     from_id = int(event.get('from'))
     to_id = int(event.get('to'))
@@ -57,15 +161,18 @@ def lambda_handler(event, context):
                         'division': division
                     }
 
-                    table.put_item(Item=item)
-
                     # Write to the league_clubs_table with league_code, team_code and team_name
                     # Only do this if the league sport_code is NOT 'Other' (to avoid parsing irrelevant pages)
                     # Had to comment out the "not other" part because some valid leagues don't identify the sport at all
+                    is_gaa = False
                     if sport_code: # and sport_code != 'Other':
-                        extract_league_clubs(clubs_table, league_id, text)
-                        extract_league_results(results_table, league_id, text)
-                        extract_league_matches(matches_table, league_id, text)
+                        is_gaa = extract_league_clubs(clubs_table, league_id, text)
+                        if is_gaa:
+                            extract_league_results(results_table, league_id, text)
+                            extract_league_matches(matches_table, league_id, text)
+
+                    item['is_gaa'] = is_gaa
+                    table.put_item(Item=item)
                 else:
                     print(f"No league name found for ID {league_id}")
             else:
@@ -116,6 +223,8 @@ def extract_age_group(league_name):
             age_group = 'Adult'
         elif re.search(r"minor", league_name, re.IGNORECASE):
             age_group = 'Minor'
+        elif re.search(r"feile", league_name, re.IGNORECASE):
+            age_group = 'Feile'            
         else:
             age_group = "Unknown"
     return age_group
@@ -155,6 +264,13 @@ def extract_league_clubs(clubs_table, league_id, text):
             if team_code and team_code not in teams:
                 teams[team_code] = team_name
 
+        # identify this is a GAA-related league by checking if at least 2 team names match known Dublin GAA clubs;
+        # requiring 2 matches avoids false positives from accidental name collisions with teams in other sports
+        gaa_match_count = sum(1 for team_name in teams.values() if team_name in VALID_GAA_CLUBS)
+        if gaa_match_count < 2:
+            return False
+
+        # add each team to the teams table
         for team_code, team_name in teams.items():
             try:
                 clubs_table.put_item(Item={
@@ -164,8 +280,11 @@ def extract_league_clubs(clubs_table, league_id, text):
                                     })
             except Exception as e:
                 print(f"Failed writing team {team_code} for league {league_id}: {e}")
+
+        return True
     except Exception as e:
         print(f"Error parsing/writing teams for league {league_id}: {e}")
+        return False
 
 def extract_league_matches(matches_table, league_id, text):
     try:
