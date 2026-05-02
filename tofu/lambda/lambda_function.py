@@ -162,16 +162,11 @@ def lambda_handler(event, context):
                     }
 
                     # Write to the league_clubs_table with league_code, team_code and team_name
-                    # Only do this if the league sport_code is NOT 'Other' (to avoid parsing irrelevant pages)
-                    # Had to comment out the "not other" part because some valid leagues don't identify the sport at all
-                    is_gaa = False
-                    if sport_code: # and sport_code != 'Other':
-                        is_gaa = extract_league_clubs(clubs_table, league_id, text)
-                        if is_gaa:
-                            extract_league_results(results_table, league_id, text)
-                            extract_league_matches(matches_table, league_id, text)
+                    if sport_code:
+                        extract_league_clubs(clubs_table, league_id, text)
+                        extract_league_results(results_table, league_id, text)
+                        extract_league_matches(matches_table, league_id, text)
 
-                    item['is_gaa'] = is_gaa
                     table.put_item(Item=item)
                 else:
                     print(f"No league name found for ID {league_id}")
@@ -263,12 +258,6 @@ def extract_league_clubs(clubs_table, league_id, text):
             team_name = re.sub(r"\s+", " ", m.group(2)).strip()
             if team_code and team_code not in teams:
                 teams[team_code] = team_name
-
-        # identify this is a GAA-related league by checking if at least 2 team names match known Dublin GAA clubs;
-        # requiring 2 matches avoids false positives from accidental name collisions with teams in other sports
-        gaa_match_count = sum(1 for team_name in teams.values() if team_name in VALID_GAA_CLUBS)
-        if gaa_match_count < 2:
-            return False
 
         # add each team to the teams table
         for team_code, team_name in teams.items():
