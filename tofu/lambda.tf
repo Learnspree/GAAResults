@@ -2,19 +2,19 @@
 # Install dependencies
 resource "null_resource" "lambda_dependencies" {
   triggers = {
-    requirements = filemd5("${path.module}/lambda/requirements.txt")
-    source       = filemd5("${path.module}/lambda/lambda_function.py")
+    requirements = filemd5("${path.module}/lambda_scraper/requirements.txt")
+    source       = filemd5("${path.module}/lambda_scraper/lambda_function.py")
   }
 
   provisioner "local-exec" {
-    command = "pip3 install -r ${path.module}/lambda/requirements.txt -t ${path.module}/lambda/"
+    command = "pip3 install -r ${path.module}/lambda_scraper/requirements.txt -t ${path.module}/lambda_scraper/"
   }
 }
 
 # Zip the Lambda code
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda/"
+  source_dir  = "${path.module}/lambda_scraper/"
   output_path = "${path.module}/lambda.zip"
   depends_on  = [null_resource.lambda_dependencies]
 }
