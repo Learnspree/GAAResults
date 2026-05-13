@@ -25,7 +25,7 @@ override.tf.json
 *.plan
 
 # lambda
-tofu/lambda/**
+tofu/lambda_scraper/**
 lambda.zip
 .terraform.lock.hcl
 
@@ -41,3 +41,4 @@ lambda.zip
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+.DS_Store
