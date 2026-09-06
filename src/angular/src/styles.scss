@@ -1,0 +1,30 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+:root {
+  $theme: mat.define-theme((
+    color: (
+      theme-type: light,
+      primary: mat.$green-palette,
+      tertiary: mat.$yellow-palette
+    ),
+    typography: (
+      brand-family: 'DM Sans',
+      plain-family: 'DM Sans'
+    ),
+    density: (
+      scale: 0
+    )
+  ));
+
+  @include mat.all-component-themes($theme);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: #f7faf6;
+  font-family: 'DM Sans', sans-serif;
+  margin: 0;
+}

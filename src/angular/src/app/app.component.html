@@ -1,0 +1,104 @@
+<mat-toolbar class="site-header">
+  <a class="brand" href="/" aria-label="GAA Results home">
+    <span class="brand-mark" aria-hidden="true">G</span>
+    <span>GAA <strong>Results</strong></span>
+  </a>
+
+  <span class="toolbar-spacer"></span>
+  <a mat-button class="header-link" href="#about">About</a>
+  <a mat-stroked-button class="header-action" href="#updates">Get updates</a>
+</mat-toolbar>
+
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <div class="eyebrow">
+        <span class="eyebrow-dot"></span>
+        Gaelic games, made simple
+      </div>
+      <h1 id="hero-title">Every score.<br><em>One place.</em></h1>
+      <p class="hero-lede">
+        Follow the results that matter to you. GAA Results brings fixtures,
+        scores and league tables together in one clear home.
+      </p>
+      <div class="hero-actions">
+        <a mat-flat-button class="primary-action" href="#updates">
+          Explore results
+          <mat-icon>arrow_forward</mat-icon>
+        </a>
+        <a mat-button class="secondary-action" href="#about">
+          How it works
+          <mat-icon>play_circle_outline</mat-icon>
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-label="Sample match result">
+      <div class="visual-glow"></div>
+      <mat-card class="score-card">
+        <div class="card-topline">
+          <span class="live-label"><span class="live-dot"></span> Latest result</span>
+          <mat-icon>more_horiz</mat-icon>
+        </div>
+        <p class="competition">Dublin Senior Football Championship</p>
+        <div class="teams">
+          <div class="team">
+            <span class="team-crest team-crest--green">S</span>
+            <span>St. Jude's</span>
+          </div>
+          <div class="score">
+            <strong>2-14</strong>
+            <span>—</span>
+            <strong>1-11</strong>
+          </div>
+          <div class="team team--right">
+            <span class="team-crest team-crest--gold">B</span>
+            <span>Ballinteer</span>
+          </div>
+        </div>
+        <mat-divider></mat-divider>
+        <div class="card-footer">
+          <span><mat-icon>calendar_today</mat-icon> Saturday, 14:30</span>
+          <span class="final-label">Full time</span>
+        </div>
+      </mat-card>
+      <div class="floating-stat floating-stat--top">
+        <mat-icon>trending_up</mat-icon>
+        <span><strong>Live</strong><small>league tables</small></span>
+      </div>
+      <div class="floating-stat floating-stat--bottom">
+        <mat-icon>check_circle</mat-icon>
+        <span><strong>Up to date</strong><small>and easy to follow</small></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="feature-strip" id="about" aria-label="GAA Results features">
+    <div class="feature">
+      <mat-icon>sports_score</mat-icon>
+      <div><strong>Results first</strong><span>Scores without the noise</span></div>
+    </div>
+    <div class="feature">
+      <mat-icon>table_chart</mat-icon>
+      <div><strong>Tables that make sense</strong><span>See the bigger picture</span></div>
+    </div>
+    <div class="feature">
+      <mat-icon>phonelink</mat-icon>
+      <div><strong>Built for every screen</strong><span>At home or on the sideline</span></div>
+    </div>
+  </section>
+
+  <section class="updates" id="updates">
+    <div>
+      <span class="section-kicker">Coming soon</span>
+      <h2>Your game day,<br>at a glance.</h2>
+    </div>
+    <p>We are getting the latest Dublin GAA data ready. Check back soon for live fixtures, results and league tables.</p>
+    <a mat-flat-button class="updates-action" href="mailto:hello@gaaresults.ie">Keep me posted <mat-icon>arrow_forward</mat-icon></a>
+  </section>
+</main>
+
+<footer>
+  <span>© 2025 GAA Results</span>
+  <span>Made for the love of the game.</span>
+</footer>
