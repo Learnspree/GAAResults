@@ -16,6 +16,8 @@ interface Match {
   away: string;
   awayScore: string;
   venue: string;
+  referee: string;
+  time: string;
   year: string;
   ageGroup: string;
   competition: string;
@@ -28,6 +30,8 @@ interface LeagueRow {
   won: number;
   drawn: number;
   lost: number;
+  pointsFor: number;
+  pointsAgainst: number;
   points: number;
 }
 
@@ -40,36 +44,36 @@ interface Competition {
 }
 
 const matches: Match[] = [
-  { date: '14 Sep 2025', home: "St. Jude's", homeScore: '2-14', away: 'Ballinteer St. Johns', awayScore: '1-11', venue: 'Parnell Park', year: '2025', ageGroup: 'Senior', competition: 'Dublin Senior Football Championship' },
-  { date: '07 Sep 2025', home: 'Na Fianna', homeScore: '0-13', away: 'Clontarf', awayScore: '1-09', venue: 'O Tooles Park', year: '2025', ageGroup: 'Senior', competition: 'Dublin Senior Football Championship' },
-  { date: '31 Aug 2025', home: 'Cuala', homeScore: '3-08', away: 'St. Brigids', awayScore: '2-12', venue: 'Pairc Ui Rinn', year: '2025', ageGroup: 'Senior', competition: 'Dublin Senior Football Championship' },
-  { date: '22 Jun 2025', home: 'Raheny', homeScore: '1-10', away: 'Na Fianna', awayScore: '1-10', venue: 'St. Annes Park', year: '2025', ageGroup: 'Intermediate', competition: 'Dublin Intermediate Football League' },
-  { date: '15 Jun 2025', home: 'Cuala', homeScore: '2-11', away: 'Raheny', awayScore: '0-08', venue: 'Dalkey', year: '2025', ageGroup: 'Intermediate', competition: 'Dublin Intermediate Football League' },
-  { date: '14 Sep 2025', home: 'Raheny', homeScore: '1-12', away: 'Cuala', awayScore: '0-10', venue: 'St. Annes Park', year: '2025', ageGroup: 'Senior', competition: 'Dublin Senior Hurling Championship' },
-  { date: '07 Sep 2025', home: 'Lucan Sarsfields', homeScore: '2-15', away: 'Naomh Barrog', awayScore: '1-09', venue: '12th Lock', year: '2025', ageGroup: 'Senior', competition: 'Dublin Senior Hurling Championship' }
+  { date: '14 Sep 2025', home: "St. Jude's", homeScore: '2-14', away: 'Ballinteer St. Johns', awayScore: '1-11', venue: 'Parnell Park', referee: 'John Murphy', time: '14:30', year: '2025', ageGroup: 'Senior', competition: 'Dublin Senior Football Championship' },
+  { date: '07 Sep 2025', home: 'Na Fianna', homeScore: '0-13', away: 'Clontarf', awayScore: '1-09', venue: 'O Tooles Park', referee: 'David Kelly', time: '15:00', year: '2025', ageGroup: 'Senior', competition: 'Dublin Senior Football Championship' },
+  { date: '31 Aug 2025', home: 'Cuala', homeScore: '3-08', away: 'St. Brigids', awayScore: '2-12', venue: 'Pairc Ui Rinn', referee: 'Michael Doyle', time: '13:30', year: '2025', ageGroup: 'Senior', competition: 'Dublin Senior Football Championship' },
+  { date: '22 Jun 2025', home: 'Raheny', homeScore: '1-10', away: 'Na Fianna', awayScore: '1-10', venue: 'St. Annes Park', referee: 'Paul Byrne', time: '14:00', year: '2025', ageGroup: 'Intermediate', competition: 'Dublin Intermediate Football League' },
+  { date: '15 Jun 2025', home: 'Cuala', homeScore: '2-11', away: 'Raheny', awayScore: '0-08', venue: 'Dalkey', referee: 'Seamus Ryan', time: '12:00', year: '2025', ageGroup: 'Intermediate', competition: 'Dublin Intermediate Football League' },
+  { date: '14 Sep 2025', home: 'Raheny', homeScore: '1-12', away: 'Cuala', awayScore: '0-10', venue: 'St. Annes Park', referee: 'Brian OConnor', time: '15:30', year: '2025', ageGroup: 'Senior', competition: 'Dublin Senior Hurling Championship' },
+  { date: '07 Sep 2025', home: 'Lucan Sarsfields', homeScore: '2-15', away: 'Naomh Barrog', awayScore: '1-09', venue: '12th Lock', referee: 'Liam Farrell', time: '14:00', year: '2025', ageGroup: 'Senior', competition: 'Dublin Senior Hurling Championship' }
 ];
 
 const leagueRows: LeagueRow[] = [
-  { position: 1, club: "St. Jude's", played: 5, won: 4, drawn: 0, lost: 1, points: 8 },
-  { position: 2, club: 'Na Fianna', played: 5, won: 3, drawn: 1, lost: 1, points: 7 },
-  { position: 3, club: 'Ballinteer St. Johns', played: 5, won: 3, drawn: 0, lost: 2, points: 6 },
-  { position: 4, club: 'Clontarf', played: 5, won: 2, drawn: 1, lost: 2, points: 5 },
-  { position: 5, club: 'Cuala', played: 5, won: 1, drawn: 1, lost: 3, points: 3 },
-  { position: 6, club: 'St. Brigids', played: 5, won: 0, drawn: 1, lost: 4, points: 1 }
+  { position: 1, club: "St. Jude's", played: 5, won: 4, drawn: 0, lost: 1, pointsFor: 86, pointsAgainst: 62, points: 8 },
+  { position: 2, club: 'Na Fianna', played: 5, won: 3, drawn: 1, lost: 1, pointsFor: 78, pointsAgainst: 67, points: 7 },
+  { position: 3, club: 'Ballinteer St. Johns', played: 5, won: 3, drawn: 0, lost: 2, pointsFor: 75, pointsAgainst: 71, points: 6 },
+  { position: 4, club: 'Clontarf', played: 5, won: 2, drawn: 1, lost: 2, pointsFor: 69, pointsAgainst: 70, points: 5 },
+  { position: 5, club: 'Cuala', played: 5, won: 1, drawn: 1, lost: 3, pointsFor: 64, pointsAgainst: 78, points: 3 },
+  { position: 6, club: 'St. Brigids', played: 5, won: 0, drawn: 1, lost: 4, pointsFor: 55, pointsAgainst: 79, points: 1 }
 ];
 
 const intermediateLeagueRows: LeagueRow[] = [
-  { position: 1, club: 'Cuala', played: 5, won: 4, drawn: 0, lost: 1, points: 8 },
-  { position: 2, club: 'Raheny', played: 5, won: 3, drawn: 1, lost: 1, points: 7 },
-  { position: 3, club: 'Na Fianna', played: 5, won: 2, drawn: 1, lost: 2, points: 5 },
-  { position: 4, club: 'Clontarf', played: 5, won: 2, drawn: 0, lost: 3, points: 4 }
+  { position: 1, club: 'Cuala', played: 5, won: 4, drawn: 0, lost: 1, pointsFor: 72, pointsAgainst: 51, points: 8 },
+  { position: 2, club: 'Raheny', played: 5, won: 3, drawn: 1, lost: 1, pointsFor: 68, pointsAgainst: 55, points: 7 },
+  { position: 3, club: 'Na Fianna', played: 5, won: 2, drawn: 1, lost: 2, pointsFor: 61, pointsAgainst: 63, points: 5 },
+  { position: 4, club: 'Clontarf', played: 5, won: 2, drawn: 0, lost: 3, pointsFor: 54, pointsAgainst: 70, points: 4 }
 ];
 
 const seniorHurlingLeagueRows: LeagueRow[] = [
-  { position: 1, club: 'Raheny', played: 5, won: 4, drawn: 0, lost: 1, points: 8 },
-  { position: 2, club: 'Lucan Sarsfields', played: 5, won: 3, drawn: 1, lost: 1, points: 7 },
-  { position: 3, club: 'Cuala', played: 5, won: 3, drawn: 0, lost: 2, points: 6 },
-  { position: 4, club: 'Naomh Barrog', played: 5, won: 2, drawn: 1, lost: 2, points: 5 }
+  { position: 1, club: 'Raheny', played: 5, won: 4, drawn: 0, lost: 1, pointsFor: 89, pointsAgainst: 63, points: 8 },
+  { position: 2, club: 'Lucan Sarsfields', played: 5, won: 3, drawn: 1, lost: 1, pointsFor: 84, pointsAgainst: 70, points: 7 },
+  { position: 3, club: 'Cuala', played: 5, won: 3, drawn: 0, lost: 2, pointsFor: 77, pointsAgainst: 72, points: 6 },
+  { position: 4, club: 'Naomh Barrog', played: 5, won: 2, drawn: 1, lost: 2, pointsFor: 68, pointsAgainst: 81, points: 5 }
 ];
 
 const competitions: Competition[] = [
@@ -113,7 +117,7 @@ export class ResultsComponent {
   readonly selectedAgeGroup = signal('Senior');
   readonly selectedCompetition = signal('All competitions');
   readonly selectedClub = signal('All clubs');
-  readonly displayedColumns = ['position', 'club', 'played', 'won', 'drawn', 'lost', 'points'];
+  readonly displayedColumns = ['position', 'club', 'played', 'won', 'drawn', 'lost', 'pointsFor', 'pointsAgainst', 'pointsDifference', 'points'];
 
   readonly displayedLeagues = computed(() => {
     const competition = this.selectedCompetition();

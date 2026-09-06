@@ -6,8 +6,8 @@
   $theme: mat.define-theme((
     color: (
       theme-type: light,
-      primary: mat.$green-palette,
-      tertiary: mat.$yellow-palette
+      primary: mat.$blue-palette,
+      tertiary: mat.$cyan-palette
     ),
     typography: (
       brand-family: 'DM Sans',
@@ -24,7 +24,7 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
-  background: #f7faf6;
+  background: #f5f9fc;
   font-family: 'DM Sans', sans-serif;
   margin: 0;
 }
