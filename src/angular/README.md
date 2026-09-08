@@ -26,3 +26,16 @@ make angular-test
 
 `angular-test` uses Angular's test runner in single-run mode. Add component
 specifications under `src/app` as the application grows.
+
+## Deploy to CloudFront
+
+The production hosting infrastructure is managed in `tofu/`. After applying
+the frontend resources, deploy the compiled site through the root Makefile:
+
+```sh
+make angular-deploy \
+  FRONTEND_BUCKET=your-frontend-bucket \
+  CLOUDFRONT_DISTRIBUTION_ID=your-distribution-id
+```
+
+The S3 bucket is private; visitors access the site through CloudFront.
