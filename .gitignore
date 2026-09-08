@@ -42,3 +42,14 @@ lambda.zip
 .terraformrc
 terraform.rc
 .DS_Store
+
+# for now, not uploading the output csvs -= they're in quicksight anyway
+output_data/**
+
+# Angular application artifacts
+src/angular/node_modules/
+src/angular/dist/
+src/angular/.angular/
+src/angular/coverage/
+src/angular/*.log
+src/angular/*.tsbuildinfo

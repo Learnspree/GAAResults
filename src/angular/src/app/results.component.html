@@ -1,0 +1,100 @@
+<mat-toolbar class="results-header">
+  <a class="brand" routerLink="/" aria-label="GAA Results home">
+    <span class="brand-mark" aria-hidden="true">G</span>
+    <span>GAA <strong>Results</strong></span>
+  </a>
+  <span class="toolbar-spacer"></span>
+  <a mat-button class="home-link" routerLink="/"><mat-icon>arrow_back</mat-icon> Home</a>
+</mat-toolbar>
+
+<main class="results-page">
+  <section class="results-intro">
+    <div>
+      <span class="eyebrow"><span class="eyebrow-dot"></span> Results centre</span>
+      <h1>Find your <em>game.</em></h1>
+      <p>Choose your competition to see the latest league table and match results.</p>
+    </div>
+  </section>
+
+  <mat-card class="filters-card">
+    <div class="filters-heading"><mat-icon>tune</mat-icon><span>Filter results</span></div>
+    <div class="filters">
+      <mat-form-field appearance="outline">
+        <mat-label>Competition year</mat-label>
+        <mat-select [ngModel]="selectedYear()" (ngModelChange)="selectedYear.set($event); updateFilters()">
+          @for (year of years; track year) { <mat-option [value]="year">{{ year }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Age group</mat-label>
+        <mat-select [ngModel]="selectedAgeGroup()" (ngModelChange)="selectedAgeGroup.set($event); updateFilters()">
+          @for (ageGroup of ageGroups; track ageGroup) { <mat-option [value]="ageGroup">{{ ageGroup }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="wide-filter">
+        <mat-label>Competition name</mat-label>
+        <mat-select [ngModel]="selectedCompetition()" (ngModelChange)="selectedCompetition.set($event); updateFilters()">
+          @for (competition of competitionOptions; track competition) { <mat-option [value]="competition">{{ competition }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Club name</mat-label>
+        <mat-select [ngModel]="selectedClub()" (ngModelChange)="selectedClub.set($event); updateFilters()">
+          @for (club of clubs; track club) { <mat-option [value]="club">{{ club }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </mat-card>
+
+  <div class="selected-context">
+    <div><span class="section-kicker">Matching leagues</span><h2>{{ displayedLeagues().length }} league{{ displayedLeagues().length === 1 ? '' : 's' }}</h2></div>
+    <span class="context-pill">{{ selectedYear() }} · {{ selectedAgeGroup() }}</span>
+  </div>
+
+  @for (league of displayedLeagues(); track league.name) {
+    <section class="league-section">
+      <div class="league-heading">
+        <div><span class="section-kicker">{{ league.ageGroup }} · {{ league.year }}</span><h2>{{ league.name }}</h2></div>
+        <a mat-stroked-button class="gaa-link" [href]="league.url" target="_blank" rel="noopener noreferrer">View league on SportLoMo <mat-icon>open_in_new</mat-icon></a>
+      </div>
+      <section class="data-grid">
+    <mat-card class="data-card">
+      <div class="card-heading"><div><span class="section-kicker">Standings</span><h3>League table</h3></div><mat-icon>table_chart</mat-icon></div>
+      <div class="table-wrap">
+        <table mat-table [dataSource]="tableFor(league)" aria-label="League table">
+          <ng-container matColumnDef="position"><th mat-header-cell *matHeaderCellDef>#</th><td mat-cell *matCellDef="let row">{{ row.position }}</td></ng-container>
+          <ng-container matColumnDef="club"><th mat-header-cell *matHeaderCellDef>Club</th><td mat-cell *matCellDef="let row"><strong>{{ row.club }}</strong></td></ng-container>
+          <ng-container matColumnDef="played"><th mat-header-cell *matHeaderCellDef>P</th><td mat-cell *matCellDef="let row">{{ row.played }}</td></ng-container>
+          <ng-container matColumnDef="won"><th mat-header-cell *matHeaderCellDef>W</th><td mat-cell *matCellDef="let row">{{ row.won }}</td></ng-container>
+          <ng-container matColumnDef="drawn"><th mat-header-cell *matHeaderCellDef>D</th><td mat-cell *matCellDef="let row">{{ row.drawn }}</td></ng-container>
+          <ng-container matColumnDef="lost"><th mat-header-cell *matHeaderCellDef>L</th><td mat-cell *matCellDef="let row">{{ row.lost }}</td></ng-container>
+          <ng-container matColumnDef="pointsFor"><th mat-header-cell *matHeaderCellDef>PF</th><td mat-cell *matCellDef="let row">{{ row.pointsFor }}</td></ng-container>
+          <ng-container matColumnDef="pointsAgainst"><th mat-header-cell *matHeaderCellDef>PA</th><td mat-cell *matCellDef="let row">{{ row.pointsAgainst }}</td></ng-container>
+          <ng-container matColumnDef="pointsDifference"><th mat-header-cell *matHeaderCellDef>PD</th><td mat-cell *matCellDef="let row">{{ row.pointsFor - row.pointsAgainst }}</td></ng-container>
+          <ng-container matColumnDef="points"><th mat-header-cell *matHeaderCellDef>Pts</th><td mat-cell *matCellDef="let row"><strong>{{ row.points }}</strong></td></ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
+    </mat-card>
+    <mat-card class="data-card">
+      <div class="card-heading"><div><span class="section-kicker">Match day</span><h3>Latest results</h3></div><mat-icon>sports_score</mat-icon></div>
+      <div class="matches">
+        @for (match of matchesFor(league); track match.date + match.home) {
+          <article class="match">
+            <div class="match-meta"><span>{{ match.date }} · {{ match.time }}</span><span>{{ match.venue }}</span></div>
+            <div class="match-teams"><span>{{ match.home }}</span><strong>{{ match.homeScore }}</strong></div>
+            <div class="match-teams"><span>{{ match.away }}</span><strong>{{ match.awayScore }}</strong></div>
+            <div class="match-official"><mat-icon>sports</mat-icon> Referee: {{ match.referee }}</div>
+          </article>
+        } @empty {
+          <p class="empty-state">No results match these filters yet.</p>
+        }
+      </div>
+    </mat-card>
+      </section>
+    </section>
+  } @empty {
+    <p class="empty-state">No leagues match these filters yet.</p>
+  }
+</main>
