@@ -1,14 +1,14 @@
 terraform {
   backend "s3" {
-    bucket = "tofustate-learnspree"
-    key    = "gaaresults/tofustate"
-    region = "us-east-1"
+    bucket  = "tofustate-learnspree"
+    key     = "gaaresults/tofustate"
+    region  = "us-east-1"
     profile = "default"
   }
 
   required_providers {
     aws = {
-      source = "hashicorp/aws"
+      source  = "hashicorp/aws"
       version = "6.35.1"
     }
   }
@@ -17,3 +17,5 @@ terraform {
 provider "aws" {
   region = "us-east-1"
 }
+
+data "aws_region" "current" {}
