@@ -46,6 +46,32 @@ data "aws_cloudfront_cache_policy" "frontend" {
   name = "Managed-CachingOptimized"
 }
 
+data "aws_cloudfront_cache_policy" "api" {
+  name = "Managed-CachingDisabled"
+}
+
+data "aws_cloudfront_origin_request_policy" "api" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
+
+resource "aws_cloudfront_function" "api_path_rewrite" {
+  name    = "gaa-results-api-path-rewrite"
+  runtime = "cloudfront-js-1.0"
+  comment = "Remove the /api prefix before forwarding requests to API Gateway"
+  publish = true
+  code    = <<-EOF
+    function handler(event) {
+      var request = event.request;
+      if (request.uri === '/api') {
+        request.uri = '/';
+      } else if (request.uri.indexOf('/api/') === 0) {
+        request.uri = request.uri.substring(4);
+      }
+      return request;
+    }
+  EOF
+}
+
 resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
   comment             = "GAA Results Angular frontend"
@@ -56,6 +82,36 @@ resource "aws_cloudfront_distribution" "frontend" {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id                = "s3-${aws_s3_bucket.frontend.id}"
     origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
+  }
+
+  origin {
+    domain_name = "${aws_api_gateway_rest_api.gaa_results.id}.execute-api.${data.aws_region.current.region}.amazonaws.com"
+    origin_id   = "api-${aws_api_gateway_rest_api.gaa_results.id}"
+    origin_path = "/${aws_api_gateway_stage.gaa_results.stage_name}"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  ordered_cache_behavior {
+    path_pattern             = "/api/*"
+    target_origin_id         = "api-${aws_api_gateway_rest_api.gaa_results.id}"
+    viewer_protocol_policy   = "redirect-to-https"
+    compress                 = true
+    cache_policy_id          = data.aws_cloudfront_cache_policy.api.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.api.id
+
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods  = ["GET", "HEAD", "OPTIONS"]
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.api_path_rewrite.arn
+    }
   }
 
   default_cache_behavior {
@@ -140,4 +196,9 @@ output "frontend_cloudfront_distribution_id" {
 output "frontend_cloudfront_domain_name" {
   description = "HTTPS CloudFront hostname for the Angular frontend."
   value       = aws_cloudfront_distribution.frontend.domain_name
+}
+
+output "gaa_results_unified_api_url" {
+  description = "API base URL through the unified CloudFront domain."
+  value       = "https://${aws_cloudfront_distribution.frontend.domain_name}/api"
 }

@@ -1,0 +1,194 @@
+swagger: "2.0"
+info:
+  title: GAA Results API
+  version: "1.0"
+  description: API for competitions, clubs, teams and match results.
+schemes:
+  - https
+produces:
+  - application/json
+host: example.execute-api.us-east-1.amazonaws.com
+basePath: /production
+x-amazon-apigateway-api-key-source: HEADER
+paths:
+  /competitions:
+    get:
+      summary: List competitions
+      operationId: listCompetitions
+      x-amazon-apigateway-api-key-required: true
+      responses:
+        "200":
+          description: Competition list
+          schema:
+            type: object
+            properties:
+              competitions:
+                type: array
+                items:
+                  $ref: "#/definitions/Competition"
+      x-amazon-apigateway-integration:
+        type: MOCK
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        responses:
+          default:
+            statusCode: "200"
+            responseTemplates:
+              application/json: |
+                {
+                  "competitions": [
+                    {
+                      "competition_id": "202576",
+                      "name": "Dublin Senior Football Championship",
+                      "age_group": "Senior",
+                      "year": 2025,
+                      "url": "https://dublingaa.sportlomo.com/league-2/202576/"
+                    },
+                    {
+                      "competition_id": "202578",
+                      "name": "Dublin Senior Hurling Championship",
+                      "age_group": "Senior",
+                      "year": 2025,
+                      "url": "https://dublingaa.sportlomo.com/league-2/202578/"
+                    }
+                  ]
+                }
+  /clubs:
+    get:
+      summary: List clubs
+      operationId: listClubs
+      x-amazon-apigateway-api-key-required: true
+      responses:
+        "200":
+          description: Club list
+      x-amazon-apigateway-integration:
+        type: MOCK
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        responses:
+          default:
+            statusCode: "200"
+            responseTemplates:
+              application/json: |
+                {
+                  "clubs": [
+                    {"club_id": "st-judes", "name": "St. Jude's"},
+                    {"club_id": "na-fianna", "name": "Na Fianna"},
+                    {"club_id": "cuala", "name": "Cuala"},
+                    {"club_id": "raheny", "name": "Raheny"}
+                  ]
+                }
+  /teams:
+    get:
+      summary: List teams
+      operationId: listTeams
+      x-amazon-apigateway-api-key-required: true
+      responses:
+        "200":
+          description: Team list
+      x-amazon-apigateway-integration:
+        type: MOCK
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        responses:
+          default:
+            statusCode: "200"
+            responseTemplates:
+              application/json: |
+                {
+                  "teams": [
+                    {"team_id": "st-judes-senior-football", "club_id": "st-judes", "name": "St. Jude's Senior Football"},
+                    {"team_id": "cuala-senior-hurling", "club_id": "cuala", "name": "Cuala Senior Hurling"},
+                    {"team_id": "raheny-senior-hurling", "club_id": "raheny", "name": "Raheny Senior Hurling"}
+                  ]
+                }
+  /competitions/{competition_id}/teams:
+    parameters:
+      - name: competition_id
+        in: path
+        required: true
+        type: string
+    get:
+      summary: List teams in a competition
+      operationId: listCompetitionTeams
+      x-amazon-apigateway-api-key-required: true
+      responses:
+        "200":
+          description: Teams in the competition
+      x-amazon-apigateway-integration:
+        type: MOCK
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        responses:
+          default:
+            statusCode: "200"
+            responseTemplates:
+              application/json: |
+                {
+                  "competition_id": "$input.params('competition_id')",
+                  "teams": [
+                    {"team_id": "st-judes-senior-football", "club_id": "st-judes", "name": "St. Jude's Senior Football"},
+                    {"team_id": "na-fianna-senior-football", "club_id": "na-fianna", "name": "Na Fianna Senior Football"}
+                  ]
+                }
+  /competitions/{competition_id}/matches:
+    parameters:
+      - name: competition_id
+        in: path
+        required: true
+        type: string
+    get:
+      summary: List matches in a competition
+      operationId: listCompetitionMatches
+      x-amazon-apigateway-api-key-required: true
+      responses:
+        "200":
+          description: Matches in the competition
+      x-amazon-apigateway-integration:
+        type: MOCK
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        responses:
+          default:
+            statusCode: "200"
+            responseTemplates:
+              application/json: |
+                {
+                  "competition_id": "$input.params('competition_id')",
+                  "matches": [
+                    {
+                      "match_id": "match-1001",
+                      "home_team": "St. Jude's",
+                      "away_team": "Ballinteer St. Johns",
+                      "home_goals": 2,
+                      "away_goals": 1,
+                      "home_total_points": 14,
+                      "away_total_points": 11,
+                      "result": "home-team",
+                      "referee": "John Murphy",
+                      "venue": "Parnell Park",
+                      "date": "2025-09-14",
+                      "time": "14:30"
+                    }
+                  ]
+                }
+definitions:
+  Competition:
+    type: object
+    required:
+      - competition_id
+      - name
+      - age_group
+      - year
+      - url
+    properties:
+      competition_id:
+        type: string
+      name:
+        type: string
+      age_group:
+        type: string
+      year:
+        type: integer
+      url:
+        type: string
